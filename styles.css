@@ -328,3 +328,129 @@ button{background:none;border:0;cursor:pointer}
   padding:11px 17px;border-radius:11px;font-size:13.5px;font-weight:570;
   z-index:60;animation:fade .2s ease;max-width:88vw;text-align:center;
 }
+
+/* ---------- mode toggle + unplanned chip ---------- */
+.moderow{display:flex;align-items:center;gap:10px;padding:0 16px 10px}
+.modetoggle{
+  display:flex;gap:3px;padding:3px;border-radius:11px;
+  background:color-mix(in srgb, var(--text) 8%, transparent);
+}
+.modetoggle button{
+  padding:6px 15px;border-radius:9px;font-size:12.5px;font-weight:650;
+  color:var(--muted);
+}
+.modetoggle button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.freechip{
+  margin-left:auto;font-size:11.5px;font-weight:640;
+  color:var(--accent);background:var(--accent-soft);
+  border:1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  padding:6px 11px;border-radius:9px;white-space:nowrap;
+}
+.freechip:active{opacity:.7}
+
+/* ---------- focus view ---------- */
+.focus{padding:16px 16px 0;display:flex;flex-direction:column;gap:12px}
+
+.fcard{
+  border-radius:22px;padding:20px;
+  color:#fff;
+  background-color:var(--c);
+  background-image:linear-gradient(155deg, rgba(255,255,255,.22), rgba(255,255,255,0) 65%);
+  box-shadow:0 10px 30px color-mix(in srgb, var(--c) 42%, transparent);
+}
+.fcard.gap{
+  --c:var(--surface);
+  color:var(--text);
+  background-image:none;
+  border:1.5px dashed var(--line);
+  box-shadow:none;
+  text-align:center;
+}
+.fcard.done{opacity:.75}
+
+.fhead{display:flex;align-items:flex-start;gap:12px}
+.fhead .badge{width:40px;height:40px;border-radius:13px;font-size:21px}
+.fheadtext{flex:1;min-width:0}
+.flabel{
+  font-size:10.5px;font-weight:750;letter-spacing:.11em;text-transform:uppercase;
+  opacity:.72;
+}
+.ftitle{font-size:23px;font-weight:730;letter-spacing:-.025em;line-height:1.18;margin-top:3px;word-break:break-word}
+.fcard.done .ftitle{text-decoration:line-through}
+.fedit{
+  flex:none;width:34px;height:34px;border-radius:11px;
+  color:rgba(255,255,255,.85);font-size:19px;
+  display:grid;place-items:center;background:rgba(255,255,255,.16);
+}
+.fcard.gap .fedit{color:var(--muted);background:var(--surface-2)}
+
+.fwhen{font-size:13px;opacity:.85;margin-top:14px;font-variant-numeric:tabular-nums}
+
+.fclock{
+  font-size:46px;font-weight:750;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;margin-top:16px;line-height:1;
+}
+.fclock.live{animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.62}}
+.fsub{font-size:11.5px;opacity:.7;margin-top:5px}
+
+.fbar{height:6px;border-radius:99px;background:rgba(255,255,255,.25);margin-top:14px;overflow:hidden}
+.fbarfill{height:100%;background:#fff;border-radius:99px;transition:width .9s linear}
+
+.factions{display:flex;gap:10px;margin-top:18px}
+.fbtn{
+  flex:1;padding:14px;border-radius:14px;font-size:15px;font-weight:680;
+  min-height:var(--tap);
+  background:rgba(255,255,255,.2);color:#fff;
+}
+.fbtn.start{background:#fff;color:var(--c)}
+.fbtn.stop{background:rgba(0,0,0,.28);color:#fff}
+.fbtn.tick.on{background:rgba(255,255,255,.32)}
+.fcard.gap .fbtn.start{background:var(--accent);color:#fff}
+.fbtn:active{opacity:.78}
+
+.strip{
+  display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+  padding:11px 13px;border-radius:15px;
+  background:var(--surface);border:1px solid var(--line);
+  border-left:4px solid var(--c);
+}
+.strip:active{opacity:.75}
+.strip.done{opacity:.6}
+.strip .badge{width:28px;height:28px;border-radius:9px;background:color-mix(in srgb, var(--c) 20%, transparent);font-size:15px}
+.stripbody{flex:1;min-width:0}
+.striplabel{font-size:10px;font-weight:730;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.striptitle{font-size:14.5px;font-weight:620;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strip.done .striptitle{text-decoration:line-through}
+.striptime{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+
+/* ---------- tile timer controls ---------- */
+.ttools{position:absolute;top:2px;right:2px;display:flex;align-items:center}
+.playbtn{
+  width:30px;height:28px;border-radius:8px;
+  color:rgba(255,255,255,.85);font-size:11px;line-height:1;
+  display:grid;place-items:center;
+}
+.playbtn.live{background:rgba(255,255,255,.28);color:#fff}
+.playbtn:active{background:rgba(255,255,255,.2)}
+.tile.done .playbtn{color:inherit;opacity:.7}
+.tile.sm .ttools{top:0;height:100%}
+.timechip{font-variant-numeric:tabular-nums}
+.timechip.live{background:rgba(255,255,255,.4)}
+
+/* ---------- stats ---------- */
+.stattotal{font-size:13px;color:var(--muted);margin-bottom:10px}
+.stack{display:flex;height:12px;border-radius:99px;overflow:hidden;gap:2px;margin-bottom:18px}
+.stack > div{min-width:3px}
+.statrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-top:1px solid var(--line)}
+.staticon{
+  flex:none;width:30px;height:30px;border-radius:10px;
+  display:grid;place-items:center;font-size:15px;
+}
+.statname{flex:1;min-width:0;font-size:14.5px;font-weight:590;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.statnum{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.statnum.streak{color:var(--text);font-weight:660}
+.stathead{
+  font-size:12px;font-weight:660;color:var(--muted);letter-spacing:.02em;
+  margin:22px 0 2px;
+}

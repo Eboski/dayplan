@@ -4,11 +4,12 @@
 const KEY = 'dayplan.v1';
 
 const DEFAULTS = {
-  v: 2,
-  settings: { start: 6, end: 23, hidePast: false, autoCarry: false },
+  v: 3,
+  settings: { start: 6, end: 23, hidePast: false, autoCarry: false, mode: 'focus' },
   tasks: [],   // {id,title,min,dur,repeat,days[],date,from, cat?,icon?,color?}
   done: {},    // { 'YYYY-MM-DD': { taskId: true } }
-  skip: {}     // { 'YYYY-MM-DD': { taskId: true } }  one-day removals of a repeat
+  skip: {},    // { 'YYYY-MM-DD': { taskId: true } }  one-day removals of a repeat
+  log: {}      // { 'YYYY-MM-DD': { taskId: { spent: seconds, startedAt: ms|null } } }
 };
 
 let db = load();
@@ -40,6 +41,8 @@ function merge(incoming) {
     out.tasks.forEach(t => { if (OLD.includes(t.color)) delete t.color; });
     out.v = 2;
   }
+  out.log = out.log || {};
+  out.v = 3;
   return out;
 }
 
@@ -178,9 +181,20 @@ const MIN_PX = 30;   // floor, so a 10-minute task is still tappable
 function layout(list, startMin, endMin) {
   const px = HOUR_PX();
 
+  // an edge-pinned block still has to clear MIN_PX, or it overhangs the grid
+  const EDGE = Math.ceil((MIN_PX + 4) / px * 60);
+
   const items = list.map(t => {
-    const s = Math.max(t.min, startMin);
-    const e = Math.min(t.min + t.dur, endMin);
+    let s = t.min, e = t.min + t.dur;
+
+    /* A block can sit entirely outside the visible window — set your day to end
+       at 8pm but keep a 10pm task and it would be drawn past the bottom of the
+       grid. Pin those to the nearest edge instead of letting them escape; the
+       block's own label still shows the real time. */
+    if (s >= endMin) { s = endMin - EDGE; e = endMin; }
+    else if (e <= startMin) { s = startMin; e = startMin + EDGE; }
+    else { s = Math.max(s, startMin); e = Math.min(e, endMin); }
+
     return { t: t, s: s, e: Math.max(e, s + 5) };
   }).sort((a, b) => a.s - b.s || b.e - a.e);
 
@@ -223,20 +237,57 @@ function layout(list, startMin, endMin) {
 
 const $ = id => document.getElementById(id);
 
+const isToday = () => keyOf(view) === keyOf(new Date());
+
+/* Focus mode only makes sense for today; any other day is always the timeline. */
+const currentMode = () => (isToday() && db.settings.mode === 'focus') ? 'focus' : 'day';
+
 function render() {
   const list = tasksFor(view);
-  const todayKey = keyOf(new Date());
-  const viewKey = keyOf(view);
-  const now = new Date();
 
   $('dateDay').textContent = relativeName(view);
   $('dateFull').textContent = view.toLocaleDateString(undefined,
     { weekday: 'short', day: 'numeric', month: 'long' });
 
   renderProgress(list);
+  renderModeRow(list);
 
-  const tl = $('timeline');
-  tl.innerHTML = '';
+  const host = $('view');
+  host.innerHTML = '';
+
+  if (currentMode() === 'focus') renderFocus(host, list);
+  else renderDay(host, list);
+}
+
+function renderModeRow(list) {
+  $('modeRow').hidden = !isToday();
+  Array.from($('modeToggle').children).forEach(b =>
+    b.classList.toggle('on', b.dataset.mode === currentMode()));
+
+  const startMin = db.settings.start * 60;
+  const endMin = (db.settings.end + 1) * 60;
+  const now = new Date();
+  const from = isToday() ? now.getHours() * 60 + now.getMinutes() : null;
+  const gaps = freeGaps(list, startMin, endMin, from, 15);
+  const free = gaps.reduce((a, g) => a + g.mins, 0);
+
+  const chip = $('freeChip');
+  chip.hidden = !isToday() || free < 15;
+  chip.textContent = fmtSpan(free) + ' unplanned';
+  chip.onclick = () => {
+    const g = gaps[0];
+    if (g) openEdit(null, null, g);
+  };
+}
+
+function renderDay(host, list) {
+  const todayKey = keyOf(new Date());
+  const viewKey = keyOf(view);
+  const now = new Date();
+
+  const tl = document.createElement('div');
+  tl.className = 'timeline';
+  host.appendChild(tl);
 
   if (!list.length) {
     const e = document.createElement('div');
@@ -365,7 +416,30 @@ function tileEl(it) {
   meta.className = 'tmeta';
   meta.appendChild(span(fmtTime(t.min) + ' · ' + fmtDur(t.dur)));
   if (t.repeat !== 'once') meta.appendChild(chip(repeatLabel(t)));
+
+  const dayKey = keyOf(view);
+  const secs = elapsed(t.id, dayKey);
+  if (secs > 0 || isRunning(t.id, dayKey)) {
+    const tc = chip(fmtClock(secs));
+    tc.classList.add('timechip');
+    tc.dataset.elapsed = t.id;
+    if (isRunning(t.id, dayKey)) tc.classList.add('live');
+    meta.appendChild(tc);
+  }
   body.appendChild(meta);
+
+  const tools = document.createElement('div');
+  tools.className = 'ttools';
+
+  const play = document.createElement('button');
+  play.className = 'playbtn' + (isRunning(t.id, dayKey) ? ' live' : '');
+  play.textContent = isRunning(t.id, dayKey) ? '❚❚' : '▶';
+  play.setAttribute('aria-label', (isRunning(t.id, dayKey) ? 'Stop' : 'Start') + ' timer for ' + t.title);
+  play.addEventListener('click', ev => {
+    ev.stopPropagation();
+    toggleTimer(t.id, dayKey);
+    render();
+  });
 
   const edit = document.createElement('button');
   edit.className = 'edit';
@@ -373,7 +447,8 @@ function tileEl(it) {
   edit.setAttribute('aria-label', 'Edit ' + t.title);
   edit.addEventListener('click', ev => { ev.stopPropagation(); openEdit(t.id); });
 
-  el.append(badge, body, edit);
+  tools.append(play, edit);
+  el.append(badge, body, tools);
   el.addEventListener('click', () => {
     toggleDone(t.id, view);
     if (navigator.vibrate) navigator.vibrate(8);
@@ -433,19 +508,346 @@ function renderCarryBar(tl, list) {
   tl.appendChild(bar);
 }
 
+/* ---------- focus view ----------
+   When something is scheduled for right now it takes over the screen, with the
+   block before and the block after reduced to thin strips. */
+
+function renderFocus(host, list) {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const dayKey = keyOf(view);
+  const slice = nowSlice(list, nowMin);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'focus';
+
+  if (!list.length) {
+    const e = document.createElement('div');
+    e.className = 'emptyday';
+    e.innerHTML = 'Nothing on the clock today.<br>Tap <b>+</b> to block out some time.';
+    wrap.appendChild(e);
+    host.appendChild(wrap);
+    return;
+  }
+
+  if (slice.prev) wrap.appendChild(stripEl(slice.prev, 'Just finished'));
+  wrap.appendChild(slice.current ? currentCard(slice.current, nowMin, dayKey)
+                                 : gapCard(list, nowMin));
+  if (slice.next) wrap.appendChild(stripEl(slice.next, 'Up next', nowMin));
+
+  host.appendChild(wrap);
+}
+
+function currentCard(t, nowMin, dayKey) {
+  const st = styleOf(t);
+  const done = isDone(t.id, view);
+  const running = isRunning(t.id, dayKey);
+  const secs = elapsed(t.id, dayKey);
+
+  const card = document.createElement('div');
+  card.className = 'fcard' + (done ? ' done' : '');
+  card.style.setProperty('--c', st.color);
+
+  const head = document.createElement('div');
+  head.className = 'fhead';
+
+  const badge = document.createElement('div');
+  badge.className = 'badge';
+  badge.textContent = done ? '\u2713' : st.icon;
+
+  const htext = document.createElement('div');
+  htext.className = 'fheadtext';
+  const label = document.createElement('div');
+  label.className = 'flabel';
+  label.textContent = 'On now';
+  const title = document.createElement('div');
+  title.className = 'ftitle';
+  title.textContent = t.title;
+  htext.append(label, title);
+
+  const edit = document.createElement('button');
+  edit.className = 'fedit';
+  edit.textContent = '\u22ef';
+  edit.setAttribute('aria-label', 'Edit ' + t.title);
+  edit.addEventListener('click', () => openEdit(t.id));
+  head.append(badge, htext, edit);
+
+  const when = document.createElement('div');
+  when.className = 'fwhen';
+  when.textContent = fmtTime(t.min) + ' \u2013 ' + fmtTime(t.min + t.dur) +
+    ' \u00b7 ' + fmtSpan(Math.max(0, t.min + t.dur - nowMin)) + ' left';
+
+  const clock = document.createElement('div');
+  clock.className = 'fclock' + (running ? ' live' : '');
+  clock.dataset.elapsed = t.id;
+  clock.textContent = fmtClock(secs);
+
+  const sub = document.createElement('div');
+  sub.className = 'fsub';
+  sub.textContent = 'tracked of ' + fmtSpan(t.dur) + ' planned';
+
+  const bar = document.createElement('div');
+  bar.className = 'fbar';
+  const fill = document.createElement('div');
+  fill.className = 'fbarfill';
+  fill.dataset.bar = t.id;
+  fill.style.width = Math.min(100, secs / 60 / t.dur * 100) + '%';
+  bar.appendChild(fill);
+
+  const actions = document.createElement('div');
+  actions.className = 'factions';
+
+  const play = document.createElement('button');
+  play.className = 'fbtn ' + (running ? 'stop' : 'start');
+  play.textContent = running ? 'Pause' : (secs > 0 ? 'Resume' : 'Start');
+  play.addEventListener('click', () => { toggleTimer(t.id, dayKey); render(); });
+
+  const tick = document.createElement('button');
+  tick.className = 'fbtn tick' + (done ? ' on' : '');
+  tick.textContent = done ? 'Done \u2713' : 'Mark done';
+  tick.addEventListener('click', () => {
+    if (!done && isRunning(t.id, dayKey)) stopAllTimers();
+    toggleDone(t.id, view);
+    if (navigator.vibrate) navigator.vibrate(10);
+    render();
+  });
+
+  actions.append(play, tick);
+  card.append(head, when, clock, sub, bar, actions);
+  return card;
+}
+
+function gapCard(list, nowMin) {
+  const endMin = (db.settings.end + 1) * 60;
+  const gaps = freeGaps(list, db.settings.start * 60, endMin, nowMin, 5);
+  const gap = gaps.find(g => g.s <= nowMin + 1);
+
+  const card = document.createElement('div');
+  card.className = 'fcard gap';
+
+  const label = document.createElement('div');
+  label.className = 'flabel';
+  label.textContent = 'On now';
+
+  const title = document.createElement('div');
+  title.className = 'ftitle';
+  title.textContent = 'Nothing scheduled';
+
+  const when = document.createElement('div');
+  when.className = 'fwhen';
+  when.textContent = gap
+    ? fmtSpan(gap.e - nowMin) + ' free until ' + fmtTime(gap.e)
+    : 'The day is done';
+
+  const btn = document.createElement('button');
+  btn.className = 'fbtn start';
+  btn.style.marginTop = '18px';
+  btn.textContent = 'Plan this time';
+  btn.addEventListener('click', () =>
+    openEdit(null, null, gap || { s: nowMin, e: endMin, mins: endMin - nowMin }));
+
+  card.append(label, title, when, btn);
+  return card;
+}
+
+function stripEl(t, label, nowMin) {
+  const st = styleOf(t);
+  const done = isDone(t.id, view);
+
+  const el = document.createElement('button');
+  el.className = 'strip' + (done ? ' done' : '');
+  el.style.setProperty('--c', st.color);
+
+  const badge = document.createElement('div');
+  badge.className = 'badge';
+  badge.textContent = done ? '\u2713' : st.icon;
+
+  const body = document.createElement('div');
+  body.className = 'stripbody';
+  const l = document.createElement('div');
+  l.className = 'striplabel';
+  l.textContent = label + (nowMin != null ? ' \u00b7 in ' + fmtSpan(Math.max(0, t.min - nowMin)) : '');
+  const ti = document.createElement('div');
+  ti.className = 'striptitle';
+  ti.textContent = t.title;
+  body.append(l, ti);
+
+  const time = document.createElement('div');
+  time.className = 'striptime';
+  time.textContent = fmtTime(t.min);
+
+  el.append(badge, body, time);
+  el.addEventListener('click', () => openEdit(t.id));
+  return el;
+}
+
+/* the running clock updates every second without redrawing the whole view */
+function tickTimers() {
+  const dayKey = keyOf(view);
+  document.querySelectorAll('[data-elapsed]').forEach(el => {
+    const id = el.dataset.elapsed;
+    if (isRunning(id, dayKey)) el.textContent = fmtClock(elapsed(id, dayKey));
+  });
+  document.querySelectorAll('[data-bar]').forEach(el => {
+    const id = el.dataset.bar;
+    if (!isRunning(id, dayKey)) return;
+    const t = db.tasks.find(x => x.id === id);
+    if (t) el.style.width = Math.min(100, elapsed(id, dayKey) / 60 / t.dur * 100) + '%';
+  });
+}
+
+/* ---------- stats ---------- */
+
+let statsSpan = 'day';
+
+function openStats() {
+  Array.from($('statsSpan').children).forEach(b =>
+    b.classList.toggle('on', b.dataset.span === statsSpan));
+  renderStats();
+  showSheet('statsSheet');
+}
+
+function renderStats() {
+  const body = $('statsBody');
+  body.innerHTML = '';
+
+  const b = budget(view, statsSpan);
+
+  if (!b.rows.length) {
+    const e = document.createElement('div');
+    e.className = 'emptyday';
+    e.style.padding = '26px 0';
+    e.textContent = 'Nothing planned in this period yet.';
+    body.appendChild(e);
+    return;
+  }
+
+  const total = document.createElement('div');
+  total.className = 'stattotal';
+  total.textContent = fmtSpan(b.planned) + ' planned' +
+    (b.actual >= 1 ? ' \u00b7 ' + fmtSpan(b.actual) + ' tracked' : '');
+  body.appendChild(total);
+
+  const stack = document.createElement('div');
+  stack.className = 'stack';
+  b.rows.forEach(r => {
+    const seg = document.createElement('div');
+    seg.style.width = (r.planned / b.planned * 100) + '%';
+    seg.style.background = r.cat.color;
+    stack.appendChild(seg);
+  });
+  body.appendChild(stack);
+
+  b.rows.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'statrow';
+
+    const ic = document.createElement('div');
+    ic.className = 'staticon';
+    ic.style.background = r.cat.color;
+    ic.textContent = r.cat.icon;
+
+    const name = document.createElement('div');
+    name.className = 'statname';
+    name.textContent = r.cat.name;
+
+    const num = document.createElement('div');
+    num.className = 'statnum';
+    num.textContent = fmtSpan(r.planned) +
+      (r.actual >= 1 ? '  \u00b7  ' + fmtSpan(r.actual) + ' tracked' : '');
+
+    row.append(ic, name, num);
+    body.appendChild(row);
+  });
+
+  const streaks = allStreaks();
+  if (streaks.length) {
+    const h = document.createElement('div');
+    h.className = 'stathead';
+    h.textContent = 'Streaks';
+    body.appendChild(h);
+
+    streaks.slice(0, 8).forEach(sk => {
+      const row = document.createElement('div');
+      row.className = 'statrow';
+      const ic = document.createElement('div');
+      ic.className = 'staticon';
+      ic.style.background = sk.style.color;
+      ic.textContent = sk.style.icon;
+      const name = document.createElement('div');
+      name.className = 'statname';
+      name.textContent = sk.task.title;
+      const num = document.createElement('div');
+      num.className = 'statnum streak';
+      num.textContent = '\u{1F525} ' + sk.streak + (sk.streak === 1 ? ' day' : ' days');
+      row.append(ic, name, num);
+      body.appendChild(row);
+    });
+  }
+}
+
+/* ---------- calendar handoff ---------- */
+
+async function sendToCalendar() {
+  const ics = buildICS(30);
+  if (!ics.count) { toast('Nothing to send yet'); return; }
+  const how = await shareOrDownload('day-plan.ics', 'text/calendar', ics.text);
+  if (how === 'cancelled') return;
+  toast(ics.count + (ics.count === 1 ? ' block' : ' blocks') + ' sent \u2014 open it in Calendar');
+}
+
+/* ---------- moving data between Safari and the installed app ----------
+   iOS keeps separate storage for a home-screen web app, so the clipboard is
+   the quickest bridge between the two copies. */
+
+async function copyData() {
+  const text = JSON.stringify(db);
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Plan copied \u2014 now paste it in the other one');
+  } catch (e) {
+    window.prompt('Copy this, then paste it into the other copy:', text);
+  }
+}
+
+async function pasteData() {
+  let text = '';
+  try {
+    text = await navigator.clipboard.readText();
+  } catch (e) {
+    text = window.prompt('Paste your plan here:') || '';
+  }
+  if (!text.trim()) { toast('Clipboard was empty'); return; }
+  try {
+    const incoming = JSON.parse(text);
+    if (!incoming || !Array.isArray(incoming.tasks)) throw new Error('bad');
+    db = merge(incoming);
+    save(); closeSheets(); render();
+    toast(db.tasks.length + ' tasks restored');
+  } catch (e) {
+    toast('That did not look like a Day Plan backup');
+  }
+}
+
 /* ---------- edit sheet ---------- */
 
-function openEdit(id, presetHour) {
+function openEdit(id, presetHour, gap) {
   editing = id;
   const t = id ? db.tasks.find(x => x.id === id) : null;
   const fallbackHour = Math.min(new Date().getHours() + 1, db.settings.end);
+
+  /* filling a gap: start when it starts and offer to fill the whole thing */
+  const startMin = gap ? Math.round(gap.s / 5) * 5
+    : (presetHour != null ? presetHour : fallbackHour) * 60;
+  const gapDur = gap ? [15, 30, 45, 60, 90, 120, 180, 240, 300, 360, 480]
+    .filter(d => d <= gap.mins).pop() || 15 : 60;
 
   draft = t
     ? Object.assign({}, t, { days: (t.days || []).slice() })
     : {
         title: '',
-        min: (presetHour != null ? presetHour : fallbackHour) * 60,
-        dur: 60,
+        min: startMin,
+        dur: gapDur,
         repeat: 'once',
         days: []
       };
@@ -660,6 +1062,7 @@ function closeSheets() {
   $('scrim').hidden = true;
   $('editSheet').hidden = true;
   $('settingsSheet').hidden = true;
+  $('statsSheet').hidden = true;
   document.body.style.overflow = '';
   editing = null;
 }
@@ -728,6 +1131,29 @@ $('nextDay').addEventListener('click', () => { view = addDays(view, 1); render()
 $('dateBtn').addEventListener('click', () => { view = new Date(); render(); scrollToNow(); });
 $('addBtn').addEventListener('click', () => openEdit(null));
 $('menuBtn').addEventListener('click', openSettings);
+$('statsBtn').addEventListener('click', openStats);
+$('statsClose').addEventListener('click', closeSheets);
+$('icsBtn').addEventListener('click', sendToCalendar);
+$('copyBtn').addEventListener('click', copyData);
+$('pasteBtn').addEventListener('click', pasteData);
+
+$('modeToggle').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  db.settings.mode = b.dataset.mode;
+  save();
+  render();
+  if (db.settings.mode === 'day') setTimeout(scrollToNow, 60);
+});
+
+$('statsSpan').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  statsSpan = b.dataset.span;
+  Array.from($('statsSpan').children).forEach(x =>
+    x.classList.toggle('on', x.dataset.span === statsSpan));
+  renderStats();
+});
 $('scrim').addEventListener('click', closeSheets);
 $('settingsClose').addEventListener('click', () => { applySettings(); closeSheets(); });
 
@@ -797,9 +1223,11 @@ document.addEventListener('visibilitychange', () => {
 });
 setInterval(() => { if ($('scrim').hidden) render(); }, 60000);
 
+sanitizeTimers();
 autoCarry();
 render();
 setTimeout(scrollToNow, 300);
+setInterval(tickTimers, 1000);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

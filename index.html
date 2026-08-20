@@ -26,6 +26,7 @@
       </button>
       <button class="iconbtn" id="nextDay" aria-label="Next day">&#8250;</button>
     </div>
+    <button class="iconbtn" id="statsBtn" aria-label="Stats"><svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><rect x="3" y="13" width="4.4" height="8" rx="1.5" fill="currentColor"/><rect x="9.8" y="8" width="4.4" height="13" rx="1.5" fill="currentColor"/><rect x="16.6" y="3" width="4.4" height="18" rx="1.5" fill="currentColor"/></svg></button>
     <button class="iconbtn" id="menuBtn" aria-label="Settings">&#9881;</button>
   </header>
 
@@ -33,9 +34,17 @@
     <div class="progressbar"><div class="progressfill" id="progressFill"></div></div>
     <div class="progresstext" id="progressText">Nothing planned</div>
   </div>
+
+  <div class="moderow" id="modeRow">
+    <div class="modetoggle" id="modeToggle">
+      <button type="button" data-mode="focus">Focus</button>
+      <button type="button" data-mode="day">Day</button>
+    </div>
+    <button class="freechip" id="freeChip" hidden></button>
+  </div>
 </div>
 
-<main id="timeline" class="timeline"></main>
+<main id="view"></main>
 
 <button class="fab" id="addBtn" aria-label="Add task">+</button>
 
@@ -146,10 +155,31 @@
   </label>
 
   <div class="field">
+    <span>Reminders</span>
+    <button class="btn ghost" style="width:100%" id="icsBtn">Send my plan to iOS Calendar</button>
+    <small style="display:block;color:var(--muted);font-size:11.5px;line-height:1.45;margin-top:7px">
+      Day Plan can't push notifications on iPhone. This hands your routine to the Calendar app,
+      which alerts you 5 minutes before each block. Re-send it after changing your routine.
+    </small>
+  </div>
+
+  <div class="field">
+    <span>Move this plan to another copy</span>
+    <div class="row">
+      <button class="btn ghost grow" id="copyBtn">Copy plan</button>
+      <button class="btn ghost grow" id="pasteBtn">Paste plan</button>
+    </div>
+    <small style="display:block;color:var(--muted);font-size:11.5px;line-height:1.45;margin-top:7px">
+      iPhone keeps separate storage for the home-screen app and for Safari, so a plan made in
+      one won't appear in the other. Copy here, then Paste in the other one.
+    </small>
+  </div>
+
+  <div class="field">
     <span>Backup</span>
     <div class="row">
-      <button class="btn ghost grow" id="exportBtn">Export data</button>
-      <button class="btn ghost grow" id="importBtn">Import data</button>
+      <button class="btn ghost grow" id="exportBtn">Export file</button>
+      <button class="btn ghost grow" id="importBtn">Import file</button>
     </div>
     <input type="file" id="importFile" accept="application/json" hidden>
   </div>
@@ -164,9 +194,27 @@
   </div>
 </section>
 
+<!-- STATS SHEET -->
+<section class="sheet" id="statsSheet" hidden aria-modal="true" role="dialog">
+  <div class="sheetgrab"></div>
+  <h2>Where the time goes</h2>
+
+  <div class="segmented" id="statsSpan" style="margin-bottom:16px">
+    <button type="button" data-span="day" class="on">This day</button>
+    <button type="button" data-span="week">This week</button>
+  </div>
+
+  <div id="statsBody"></div>
+
+  <div class="sheetactions">
+    <button class="btn primary" id="statsClose">Done</button>
+  </div>
+</section>
+
 <div class="toast" id="toast" hidden></div>
 
 <script src="categories.js"></script>
+<script src="extras.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -1,11 +1,12 @@
-/* Offline shell. Bump CACHE when files change so phones pick up the update. */
-const CACHE = 'dayplan-v4';
+﻿/* Offline shell. Bump CACHE when files change so phones pick up the update. */
+const CACHE = 'dayplan-v5';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './categories.js',
+  './extras.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
