@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>Day Plan</title>
-<meta name="theme-color" content="#101318" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12131c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fdfcfb" media="(prefers-color-scheme: light)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Day Plan">
@@ -17,38 +17,46 @@
 <body>
 
 <div class="stickytop">
-<header class="topbar">
-  <div class="datenav">
-    <button class="iconbtn" id="prevDay" aria-label="Previous day">&#8249;</button>
-    <button class="datebtn" id="dateBtn">
-      <span class="dateday" id="dateDay">Today</span>
-      <span class="datefull" id="dateFull">—</span>
-    </button>
-    <button class="iconbtn" id="nextDay" aria-label="Next day">&#8250;</button>
-  </div>
-  <button class="iconbtn" id="menuBtn" aria-label="Settings">&#9881;</button>
-</header>
+  <header class="topbar">
+    <div class="datenav">
+      <button class="iconbtn" id="prevDay" aria-label="Previous day">&#8249;</button>
+      <button class="datebtn" id="dateBtn">
+        <span class="dateday" id="dateDay">Today</span>
+        <span class="datefull" id="dateFull">—</span>
+      </button>
+      <button class="iconbtn" id="nextDay" aria-label="Next day">&#8250;</button>
+    </div>
+    <button class="iconbtn" id="menuBtn" aria-label="Settings">&#9881;</button>
+  </header>
 
-<div class="progresswrap">
-  <div class="progressbar"><div class="progressfill" id="progressFill"></div></div>
-  <div class="progresstext" id="progressText">Nothing planned yet</div>
-</div>
+  <div class="progresswrap">
+    <div class="progressbar"><div class="progressfill" id="progressFill"></div></div>
+    <div class="progresstext" id="progressText">Nothing planned</div>
+  </div>
 </div>
 
 <main id="timeline" class="timeline"></main>
 
 <button class="fab" id="addBtn" aria-label="Add task">+</button>
 
-<!-- ADD / EDIT SHEET -->
 <div class="scrim" id="scrim" hidden></div>
 
+<!-- ADD / EDIT SHEET -->
 <section class="sheet" id="editSheet" hidden aria-modal="true" role="dialog">
   <div class="sheetgrab"></div>
   <h2 id="editTitle">New task</h2>
 
+  <div class="preview" id="preview">
+    <div class="badge" id="pvIcon">📌</div>
+    <div>
+      <div class="pvtitle" id="pvTitle">New task</div>
+      <div class="pvmeta" id="pvMeta">—</div>
+    </div>
+  </div>
+
   <label class="field">
     <span>What</span>
-    <input type="text" id="fTitle" placeholder="e.g. Write script draft" autocomplete="off" enterkeyhint="done">
+    <input type="text" id="fTitle" placeholder="e.g. Gym, AI training, edit video" autocomplete="off" enterkeyhint="done">
   </label>
 
   <div class="row">
@@ -67,6 +75,9 @@
         <option value="120">2 hours</option>
         <option value="180">3 hours</option>
         <option value="240">4 hours</option>
+        <option value="300">5 hours</option>
+        <option value="360">6 hours</option>
+        <option value="480">8 hours</option>
       </select>
     </label>
   </div>
@@ -95,15 +106,16 @@
   </div>
 
   <div class="field">
-    <span>Colour</span>
-    <div class="colorpick" id="fColor"></div>
+    <span>Icon</span>
+    <div class="scroller iconpick" id="fIcon"></div>
   </div>
 
-  <div class="sheetactions">
-    <button class="btn ghost" id="deleteBtn" hidden>Delete</button>
-    <button class="btn ghost" id="cancelBtn">Cancel</button>
-    <button class="btn primary" id="saveBtn">Save</button>
+  <div class="field">
+    <span>Colour</span>
+    <div class="scroller colorpick" id="fColor"></div>
   </div>
+
+  <div class="sheetactions"></div>
 </section>
 
 <!-- SETTINGS SHEET -->
@@ -124,7 +136,7 @@
 
   <label class="checkrow">
     <input type="checkbox" id="sHidePast">
-    <span>Collapse hours that have already passed</span>
+    <span>Shade hours that have already passed</span>
   </label>
 
   <label class="checkrow">
@@ -154,6 +166,7 @@
 
 <div class="toast" id="toast" hidden></div>
 
+<script src="categories.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
