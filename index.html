@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Day Plan</title>
+<meta name="theme-color" content="#101318" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Day Plan">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="stickytop">
+<header class="topbar">
+  <div class="datenav">
+    <button class="iconbtn" id="prevDay" aria-label="Previous day">&#8249;</button>
+    <button class="datebtn" id="dateBtn">
+      <span class="dateday" id="dateDay">Today</span>
+      <span class="datefull" id="dateFull">—</span>
+    </button>
+    <button class="iconbtn" id="nextDay" aria-label="Next day">&#8250;</button>
+  </div>
+  <button class="iconbtn" id="menuBtn" aria-label="Settings">&#9881;</button>
+</header>
+
+<div class="progresswrap">
+  <div class="progressbar"><div class="progressfill" id="progressFill"></div></div>
+  <div class="progresstext" id="progressText">Nothing planned yet</div>
+</div>
+</div>
+
+<main id="timeline" class="timeline"></main>
+
+<button class="fab" id="addBtn" aria-label="Add task">+</button>
+
+<!-- ADD / EDIT SHEET -->
+<div class="scrim" id="scrim" hidden></div>
+
+<section class="sheet" id="editSheet" hidden aria-modal="true" role="dialog">
+  <div class="sheetgrab"></div>
+  <h2 id="editTitle">New task</h2>
+
+  <label class="field">
+    <span>What</span>
+    <input type="text" id="fTitle" placeholder="e.g. Write script draft" autocomplete="off" enterkeyhint="done">
+  </label>
+
+  <div class="row">
+    <label class="field grow">
+      <span>Start</span>
+      <input type="time" id="fTime" step="300">
+    </label>
+    <label class="field grow">
+      <span>Length</span>
+      <select id="fDur">
+        <option value="15">15 min</option>
+        <option value="30">30 min</option>
+        <option value="45">45 min</option>
+        <option value="60" selected>1 hour</option>
+        <option value="90">1.5 hours</option>
+        <option value="120">2 hours</option>
+        <option value="180">3 hours</option>
+        <option value="240">4 hours</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="field">
+    <span>Repeat</span>
+    <div class="segmented" id="fRepeat">
+      <button type="button" data-rep="once" class="on">Just today</button>
+      <button type="button" data-rep="daily">Every day</button>
+      <button type="button" data-rep="weekdays">Weekdays</button>
+      <button type="button" data-rep="custom">Pick days</button>
+    </div>
+  </div>
+
+  <div class="field" id="dayPickWrap" hidden>
+    <span>On these days</span>
+    <div class="daypick" id="fDays">
+      <button type="button" data-d="1">M</button>
+      <button type="button" data-d="2">T</button>
+      <button type="button" data-d="3">W</button>
+      <button type="button" data-d="4">T</button>
+      <button type="button" data-d="5">F</button>
+      <button type="button" data-d="6">S</button>
+      <button type="button" data-d="0">S</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <span>Colour</span>
+    <div class="colorpick" id="fColor"></div>
+  </div>
+
+  <div class="sheetactions">
+    <button class="btn ghost" id="deleteBtn" hidden>Delete</button>
+    <button class="btn ghost" id="cancelBtn">Cancel</button>
+    <button class="btn primary" id="saveBtn">Save</button>
+  </div>
+</section>
+
+<!-- SETTINGS SHEET -->
+<section class="sheet" id="settingsSheet" hidden aria-modal="true" role="dialog">
+  <div class="sheetgrab"></div>
+  <h2>Settings</h2>
+
+  <div class="row">
+    <label class="field grow">
+      <span>Day starts</span>
+      <input type="time" id="sStart" step="3600">
+    </label>
+    <label class="field grow">
+      <span>Day ends</span>
+      <input type="time" id="sEnd" step="3600">
+    </label>
+  </div>
+
+  <label class="checkrow">
+    <input type="checkbox" id="sHidePast">
+    <span>Collapse hours that have already passed</span>
+  </label>
+
+  <label class="checkrow">
+    <input type="checkbox" id="sAutoCarry">
+    <span>Carry unfinished tasks forward automatically<br>
+      <small>Anything left undone in the last 14 days moves to today when you open the app.</small></span>
+  </label>
+
+  <div class="field">
+    <span>Backup</span>
+    <div class="row">
+      <button class="btn ghost grow" id="exportBtn">Export data</button>
+      <button class="btn ghost grow" id="importBtn">Import data</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json" hidden>
+  </div>
+
+  <div class="field">
+    <span>Danger zone</span>
+    <button class="btn danger" id="wipeBtn">Erase everything</button>
+  </div>
+
+  <div class="sheetactions">
+    <button class="btn primary" id="settingsClose">Done</button>
+  </div>
+</section>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

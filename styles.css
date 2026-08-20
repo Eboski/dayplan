@@ -1,0 +1,227 @@
+:root{
+  --bg:#f7f6f3;
+  --surface:#ffffff;
+  --surface-2:#efede8;
+  --line:#e2dfd8;
+  --text:#1c1d20;
+  --muted:#7c7f86;
+  --accent:#4c6ef5;
+  --accent-soft:#e7ecfe;
+  --danger:#d64545;
+  --done:#2f9e63;
+  --radius:14px;
+  --tap:44px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#101318;
+    --surface:#191d24;
+    --surface-2:#232833;
+    --line:#2b313c;
+    --text:#eceef2;
+    --muted:#878e9b;
+    --accent:#7d95ff;
+    --accent-soft:#242c46;
+    --danger:#f07070;
+    --done:#4ecb8b;
+  }
+}
+
+/* lets iOS paint native controls (checkboxes, the time wheel) to match the theme */
+:root{color-scheme:light dark}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  padding-bottom:calc(96px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:contain;
+}
+button,input,select{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+
+/* ---------- top bar ---------- */
+.stickytop{
+  position:sticky;top:0;z-index:20;
+  background:color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.topbar{
+  display:flex;align-items:center;gap:8px;
+  padding:calc(8px + env(safe-area-inset-top)) 12px 4px;
+}
+.datenav{display:flex;align-items:center;gap:2px;flex:1;min-width:0}
+.iconbtn{
+  width:var(--tap);height:var(--tap);border-radius:12px;
+  font-size:24px;line-height:1;color:var(--muted);
+  display:grid;place-items:center;flex:none;
+}
+.iconbtn:active{background:var(--surface-2)}
+.datebtn{flex:1;min-width:0;text-align:left;padding:2px 6px;display:block}
+.dateday{display:block;font-size:19px;font-weight:650;letter-spacing:-.01em}
+.datefull{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+
+/* ---------- progress ---------- */
+.progresswrap{display:flex;align-items:center;gap:11px;padding:2px 16px 9px}
+.progressbar{
+  flex:1;height:7px;border-radius:99px;overflow:hidden;
+  background:color-mix(in srgb, var(--text) 11%, transparent);
+}
+.progressfill{height:100%;width:0;border-radius:99px;background:var(--done);transition:width .35s ease}
+.progresstext{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ---------- timeline ---------- */
+.timeline{padding:6px 12px 0}
+.hour{
+  display:grid;grid-template-columns:52px 1fr;
+  gap:10px;align-items:start;
+  padding:2px 0;
+}
+.hour + .hour{border-top:1px solid var(--line)}
+.hour.empty{min-height:34px}
+.hour.past .hlabel{opacity:.4}
+.hlabel{
+  padding-top:11px;font-size:11.5px;font-weight:600;
+  color:var(--muted);letter-spacing:.03em;text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+.hslot{padding:5px 0;min-height:30px;display:flex;flex-direction:column;gap:6px}
+.hour.empty .hslot{cursor:pointer}
+
+.now{
+  display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;
+  margin:2px 0;pointer-events:none;
+}
+.nowlabel{font-size:11px;font-weight:700;color:var(--danger);text-align:right;font-variant-numeric:tabular-nums}
+.nowline{height:2px;border-radius:2px;background:var(--danger);position:relative}
+.nowline::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--danger)}
+
+/* ---------- task ---------- */
+.task{
+  display:flex;align-items:flex-start;gap:11px;
+  background:var(--surface);border:1px solid var(--line);
+  border-left:4px solid var(--tc,var(--accent));
+  border-radius:var(--radius);
+  padding:11px 12px;
+  min-height:var(--tap);
+  transition:opacity .2s ease, transform .08s ease;
+}
+.task:active{transform:scale(.985)}
+.tick{
+  flex:none;width:23px;height:23px;margin-top:1px;
+  border-radius:50%;border:2px solid var(--line);
+  display:grid;place-items:center;
+  font-size:13px;color:transparent;
+}
+.task.done{opacity:.5}
+.task.done .tick{background:var(--done);border-color:var(--done);color:#fff}
+.task.done .ttitle{text-decoration:line-through}
+.tbody{flex:1;min-width:0}
+.ttitle{font-size:15.5px;font-weight:520;word-break:break-word}
+.tmeta{font-size:11.5px;color:var(--muted);margin-top:3px;display:flex;gap:7px;flex-wrap:wrap}
+.chip{background:var(--surface-2);border-radius:6px;padding:1px 6px;font-size:10.5px;font-weight:600;letter-spacing:.02em}
+.edit{flex:none;width:32px;align-self:stretch;color:var(--muted);font-size:17px;display:grid;place-items:center;margin:-11px -12px -11px 0}
+
+/* ---------- carry-forward ---------- */
+.carrybar{padding:18px 0 8px;display:flex;justify-content:center}
+.carrybtn{
+  padding:12px 18px;border-radius:12px;
+  background:var(--accent-soft);color:var(--accent);
+  font-size:13.5px;font-weight:640;min-height:var(--tap);
+  border:1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.carrybtn:active{opacity:.7}
+.carrybtn::after{content:" →"}
+
+.emptyday{
+  text-align:center;color:var(--muted);
+  padding:46px 24px;font-size:14px;line-height:1.6;
+}
+
+/* ---------- fab ---------- */
+.fab{
+  position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));
+  width:58px;height:58px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:31px;line-height:1;
+  display:grid;place-items:center;z-index:30;
+  box-shadow:0 6px 20px rgba(0,0,0,.22);
+}
+.fab:active{transform:scale(.94)}
+
+/* ---------- sheet ---------- */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;animation:fade .2s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:var(--surface);
+  border-radius:20px 20px 0 0;
+  padding:6px 18px calc(18px + env(safe-area-inset-bottom));
+  max-height:92vh;overflow-y:auto;
+  animation:up .26s cubic-bezier(.2,.8,.25,1);
+  box-shadow:0 -8px 34px rgba(0,0,0,.2);
+}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheetgrab{width:38px;height:4px;border-radius:99px;background:var(--line);margin:6px auto 12px}
+.sheet h2{margin:0 0 14px;font-size:18px;font-weight:680;letter-spacing:-.01em}
+
+.field{display:block;margin-bottom:15px}
+.field > span{display:block;font-size:12px;font-weight:650;color:var(--muted);margin-bottom:7px;letter-spacing:.02em}
+.field input[type=text],.field input[type=time],.field select{
+  width:100%;padding:12px 13px;font-size:16px;
+  background:var(--surface-2);border:1px solid transparent;
+  border-radius:11px;outline:none;min-height:var(--tap);
+  -webkit-appearance:none;appearance:none;
+}
+.field select{background-image:none}
+.field input:focus{border-color:var(--accent)}
+.row{display:flex;gap:11px}
+.grow{flex:1;min-width:0}
+
+.segmented{display:flex;gap:6px;flex-wrap:wrap}
+.segmented button{
+  flex:1 1 auto;padding:10px 8px;font-size:13px;font-weight:600;
+  background:var(--surface-2);border-radius:10px;color:var(--muted);
+  min-height:var(--tap);white-space:nowrap;
+}
+.segmented button.on{background:var(--accent);color:#fff}
+
+.daypick{display:flex;gap:6px}
+.daypick button{
+  flex:1;height:var(--tap);border-radius:10px;
+  background:var(--surface-2);color:var(--muted);font-weight:650;font-size:13px;
+}
+.daypick button.on{background:var(--accent);color:#fff}
+
+.colorpick{display:flex;gap:9px}
+.colorpick button{
+  width:34px;height:34px;border-radius:50%;
+  border:3px solid transparent;
+}
+.colorpick button.on{border-color:var(--text)}
+
+.checkrow{display:flex;align-items:center;gap:11px;margin-bottom:15px;font-size:14px;min-height:var(--tap)}
+.checkrow input{width:21px;height:21px;flex:none;accent-color:var(--accent)}
+.checkrow small{display:block;color:var(--muted);font-size:11.5px;line-height:1.45;margin-top:3px}
+
+.sheetactions{display:flex;gap:10px;margin-top:20px}
+.btn{
+  flex:1;padding:14px;border-radius:12px;font-size:15px;font-weight:640;
+  min-height:var(--tap);
+}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.ghost{background:var(--surface-2);color:var(--text)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger);width:100%}
+.btn:active{opacity:.75}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(94px + env(safe-area-inset-bottom));
+  background:var(--text);color:var(--bg);
+  padding:11px 17px;border-radius:11px;font-size:13.5px;font-weight:560;
+  z-index:60;animation:fade .2s ease;max-width:88vw;text-align:center;
+}
